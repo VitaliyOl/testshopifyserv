@@ -1,28 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-require("dotenv").config();
-
-const { EMAIL, PASS } = process.env;
-
-const config = {
-  host: "smtp.ukr.net",
-  port: 465,
-  secure: true,
-  auth: {
-    user: EMAIL,
-    pass: PASS,
-  },
-};
-
-const transporter = nodemailer.createTransport(config);
-
-const sendEmail = async (data) => {
-  const email = { ...data, from: EMAIL };
-  await transporter.sendMail(email);
-};
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -43,10 +23,10 @@ app.post("/create-order", async (req, res) => {
       },
     });
 
-    await axios.post(
-      "https://testshopifyapi.onrender.com/webhooks/orders",
-      req.body
-    );
+     await axios.post(
+       "https://testshopifyapi.onrender.com/webhooks/orders",
+       req.body
+     );
 
     res.status(response.status).json(response.data);
   } catch (error) {
@@ -61,7 +41,8 @@ app.post("/create-order", async (req, res) => {
   }
 });
 
-app.post("/webhooks/orders", async (req, res) => {
+app.post("/webhooks/orders", (req, res) => {
+  console.log("Received Webhook Data:", req.body);
   const secret = process.env.SHOPIFY_SECRET;
   const hmacHeader = req.headers["x-shopify-hmac-sha256"];
 
@@ -72,15 +53,7 @@ app.post("/webhooks/orders", async (req, res) => {
     .digest("base64");
 
   if (hash === hmacHeader) {
-    const { contact_email, current_subtotal_price } = req.body;
     console.log("Verified Webhook:", req.body);
-    
-    await sendEmail({
-      to: "your-email@example.com",
-      subject: "Webhook Data Received",
-      text: `Contact Email: ${contact_email}\nSubtotal Price: ${current_subtotal_price}`,
-    });
-
     res.status(200).send("Webhook received and verified");
   } else {
     console.error("Failed to verify Webhook");
