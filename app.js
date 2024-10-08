@@ -1,4 +1,3 @@
-require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
@@ -7,6 +6,9 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const { EMAIL, PASS } = process.env;
+
+const app = express();
+const PORT = process.env.PORT || 4000;
 
 const config = {
   host: "smtp.ukr.net",
@@ -25,12 +27,14 @@ const sendEmail = async (data) => {
   await transporter.sendMail(email);
 };
 
-const app = express();
-const PORT = process.env.PORT || 4000;
-
 app.use(cors());
-app.use(express.json());
-app.use(express.text({ type: "*/*" }));
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 
 app.post("/create-order", async (req, res) => {
   console.log("Received Order Data:", JSON.stringify(req.body, null, 2));
@@ -45,10 +49,10 @@ app.post("/create-order", async (req, res) => {
       },
     });
 
-     await axios.post(
-       "https://testshopifyapi.onrender.com/webhooks/orders",
-       req.body
-     );
+    await axios.post(
+      "https://testshopifyapi.onrender.com/webhooks/orders",
+      req.body
+    );
 
     res.status(response.status).json(response.data);
   } catch (error) {
@@ -64,34 +68,22 @@ app.post("/create-order", async (req, res) => {
 });
 
 app.post("/webhooks/orders", (req, res) => {
-  console.log("Received Webhook Data:");
-
   const secret = process.env.SHOPIFY_SECRET;
   const hmacHeader = req.headers["x-shopify-hmac-sha256"];
-
- 
-  const rawBody = req.body; 
-
   const hash = crypto
     .createHmac("sha256", secret)
-    .update(rawBody, "utf8") 
+    .update(req.rawBody, "utf8")
     .digest("base64");
 
-  console.log("Received HMAC Header:", hmacHeader);
-  console.log("Computed Hash:", hash);
-
   if (hash === hmacHeader) {
-    const { contact_email, current_subtotal_price } = JSON.parse(rawBody); 
-
-    console.log(contact_email);
-    console.log("Verified Webhook:");
+    const { contact_email, current_subtotal_price } = JSON.parse(req.rawBody);
+    console.log("Verified Webhook:", contact_email, current_subtotal_price);
     res.status(200).send("Webhook received and verified");
   } else {
     console.error("Failed to verify Webhook");
     res.status(403).send("Forbidden");
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
