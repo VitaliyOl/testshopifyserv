@@ -67,6 +67,10 @@ app.post("/webhooks/orders", (req, res) => {
   const secret = process.env.SHOPIFY_SECRET;
   const hmacHeader = req.headers["x-shopify-hmac-sha256"];
 
+  console.log("Received Headers:", req.headers);
+
+  console.log("Raw Body:", req.rawBody);
+
   const body = JSON.stringify(req.body);
   const hash = crypto
     .createHmac("sha256", secret)
@@ -75,6 +79,7 @@ app.post("/webhooks/orders", (req, res) => {
   
 console.log("Received HMAC Header:", hmacHeader);
   console.log("Computed Hash:", hash);
+  console.log("Secret:", secret);
   
   if (hash === hmacHeader) {
     const { contact_email, current_subtotal_price } = req.body;
