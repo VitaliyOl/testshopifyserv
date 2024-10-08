@@ -49,6 +49,8 @@ app.post("/create-order", async (req, res) => {
       },
     });
 
+    console.log("Shopify Response Data:", response.data);
+
     await axios.post(
       "https://testshopifyapi.onrender.com/webhooks/orders",
       req.body
@@ -78,6 +80,11 @@ app.post("/webhooks/orders", (req, res) => {
   if (hash === hmacHeader) {
     const { contact_email, current_subtotal_price } = JSON.parse(req.rawBody);
     console.log("Verified Webhook:", contact_email, current_subtotal_price);
+    sendEmail({
+      to: contact_email,
+      subject: "Order Confirmation",
+      text: `Thank you for your order! Your total is ${current_subtotal_price}.`,
+    });
     res.status(200).send("Webhook received and verified");
   } else {
     console.error("Failed to verify Webhook");
