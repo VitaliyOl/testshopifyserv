@@ -23,6 +23,11 @@ app.post("/create-order", async (req, res) => {
       },
     });
 
+     await axios.post(
+       "https://testshopifyapi.onrender.com/webhooks/orders",
+       req.body
+     );
+
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error(
