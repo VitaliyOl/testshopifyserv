@@ -42,6 +42,7 @@ app.post("/create-order", async (req, res) => {
 });
 
 app.post("/webhooks/orders", (req, res) => {
+  console.log("Received Webhook Data:", req.body);
   const secret = process.env.SHOPIFY_SECRET;
   const hmacHeader = req.headers["x-shopify-hmac-sha256"];
 
