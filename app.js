@@ -3,6 +3,27 @@ const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
+
+const { EMAIL, PASS } = process.env;
+
+const config = {
+  host: "smtp.ukr.net",
+  port: 465,
+  secure: true,
+  auth: {
+    user: EMAIL,
+    pass: PASS,
+  },
+};
+
+const transporter = nodemailer.createTransport(config);
+
+const sendEmail = async (data) => {
+  const email = { ...data, from: EMAIL };
+  await transporter.sendMail(email);
+};
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -53,6 +74,9 @@ app.post("/webhooks/orders", (req, res) => {
     .digest("base64");
 
   if (hash === hmacHeader) {
+    const { contact_email, current_subtotal_price } = req.body;
+
+    console.log(contact_email);
     console.log("Verified Webhook:", req.body);
     res.status(200).send("Webhook received and verified");
   } else {
