@@ -83,10 +83,17 @@ app.post("/webhooks/orders", (req, res) => {
       current_subtotal_price,
       confirmation_number,
       financial_status,
-      customer: { first_name, last_name, phone },
-      shipping_address: { address1, city, country, zip },
+      customer: { first_name, last_name, phone } = {},
+      shipping_address: { address1, city, country, zip } = {},
     } = JSON.parse(req.rawBody);
+
+    if (!contact_email || !current_subtotal_price || !confirmation_number) {
+      console.error("Required fields are missing in the request");
+      return res.status(400).send("Required fields are missing");
+    }
+
     console.log("Verified Webhook:", contact_email, current_subtotal_price);
+
     const emailText = `
       Thank you for your order! Your order number is ${confirmation_number}.
       Total: ${current_subtotal_price} ${financial_status}.
@@ -95,11 +102,13 @@ app.post("/webhooks/orders", (req, res) => {
       - Address: ${address1}, ${city}, ${country}, ${zip}
       - Phone: ${phone ? phone : "not provided"}
     `;
+
     sendEmail({
       to: contact_email,
       subject: "Order Confirmation",
       text: emailText,
     });
+
     res.status(200).send("Webhook received and verified");
   } else {
     console.error("Failed to verify Webhook");
