@@ -49,11 +49,6 @@ app.post("/create-order", async (req, res) => {
       },
     });
 
-    // await axios.post(
-    //   "https://testshopifyapi.onrender.com/webhooks/orders",
-    //   req.body
-    // );
-
     const {
       contact_email,
       current_subtotal_price,
