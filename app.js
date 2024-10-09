@@ -78,32 +78,44 @@ app.post("/webhooks/orders", (req, res) => {
     .digest("base64");
 
   if (hash === hmacHeader) {
-    const {
-      contact_email,
-      current_subtotal_price,
-      confirmation_number,
-      financial_status,
-      customer: { first_name, last_name, phone },
-      shipping_address: { address1, city, country, zip },
-    } = JSON.parse(req.rawBody).order;
+    const requestBody = JSON.parse(req.rawBody);
+    const order = requestBody.order;
 
-    console.log("Verified Webhook:", contact_email, current_subtotal_price);
-    const emailText = `
-      Thank you for your order! Your order number is ${confirmation_number}.
-      Total: ${current_subtotal_price} ${financial_status}.
-      Delivery details:
-      - Name: ${first_name} ${last_name}
-      - Address: ${address1}, ${city}, ${country}, ${zip}
-      - Phone: ${phone ? phone : "not provided"}
-    `;
+    if (order) {
+      const {
+        contact_email,
+        current_subtotal_price,
+        confirmation_number,
+        financial_status,
+        customer: { first_name, last_name, phone } = {},
+        shipping_address: { address1, city, country, zip } = {},
+      } = order;
 
-    sendEmail({
-      to: contact_email,
-      subject: "Order Confirmation",
-      text: emailText,
-    });
-    
-    res.status(200).send("Webhook received and verified");
+      console.log("Verified Webhook:", {
+        contact_email,
+        current_subtotal_price        
+      });
+      
+      const emailText = `
+        Thank you for your order! Your order number is ${confirmation_number}.
+        Total: ${current_subtotal_price} ${financial_status}.
+        Delivery details:
+        - Name: ${first_name} ${last_name}
+        - Address: ${address1}, ${city}, ${country}, ${zip}
+        - Phone: ${phone ? phone : "not provided"}
+      `;
+
+      sendEmail({
+        to: contact_email,
+        subject: "Order Confirmation",
+        text: emailText,
+      });
+
+      res.status(200).send("Webhook received and verified");
+    } else {
+      console.error("Order data not found in the request");
+      res.status(400).send("Order data missing");
+    }
   } else {
     console.error("Failed to verify Webhook");
     res.status(403).send("Forbidden");
