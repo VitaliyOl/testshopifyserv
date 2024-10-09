@@ -41,7 +41,7 @@ app.post("/create-order", async (req, res) => {
   const shopifyUrl = process.env.SHOPIFY_URL;
   const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
 
-  try {
+  try {    
     const response = await axios.post(shopifyUrl, req.body, {
       headers: {
         "Content-Type": "application/json",
@@ -49,13 +49,34 @@ app.post("/create-order", async (req, res) => {
       },
     });
 
-    console.log("Shopify Response Data:", response.data);
+    // await axios.post(
+    //   "https://testshopifyapi.onrender.com/webhooks/orders",
+    //   req.body
+    // );
 
-    await axios.post(
-      "https://testshopifyapi.onrender.com/webhooks/orders",
-      req.body
-    );
+    const {
+      contact_email,
+      current_subtotal_price,
+      confirmation_number,
+      financial_status,
+      customer: { first_name, last_name },
+      shipping_address: { address1, city, country, zip },
+    } = response.data.order;
+    
+    const emailText = `
+      Thank you for your order! Your order number is ${confirmation_number}.
+      Total: ${current_subtotal_price} ${financial_status}.
+      Delivery details:
+      - Name: ${first_name} ${last_name}
+      - Address: ${address1}, ${city}, ${country}, ${zip}
+    `;
 
+    await sendEmail({
+      to: contact_email,
+      subject: "Order Confirmation",
+      text: emailText,
+    });
+    
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error(
